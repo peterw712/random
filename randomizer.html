@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Custom Randomizer with Multiple Templates</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1, h2 {
+      color: #333;
+    }
+    .category {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .category-header {
+      font-weight: bold;
+      margin-bottom: 5px;
+      font-size: 1.2em;
+      display: inline-block;
+      margin-right: 10px;
+    }
+    input[type="text"] {
+      padding: 5px;
+      margin: 5px 0;
+      width: 80%;
+    }
+    button {
+      padding: 5px 10px;
+      cursor: pointer;
+      margin: 5px 0;
+    }
+    #templateManagement {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 20px;
+    }
+    .result {
+      margin: 10px 0;
+      padding: 10px;
+      border: 2px solid #000;
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+  <h1>Custom Randomizer with Multiple Templates</h1>
+  
+  <!-- Template Management Section -->
+  <div id="templateManagement">
+    <h2>Template Management</h2>
+    <div>
+      <input type="text" id="templateNameInput" placeholder="Enter template name to save current template" />
+      <button id="saveTemplateBtn">Save Template</button>
+    </div>
+    <div style="margin-top: 10px;">
+      <select id="templateSelect"></select>
+      <button id="loadTemplateBtn">Load Template</button>
+      <button id="deleteTemplateBtn">Delete Template</button>
+    </div>
+  </div>
+
+  <!-- Section to add a new category -->
+  <div>
+    <input type="text" id="categoryNameInput" placeholder="Enter category name" />
+    <button id="addCategoryBtn">Add Category</button>
+  </div>
+
+  <!-- Container for categories -->
+  <div id="categoriesContainer"></div>
+
+  <!-- Global randomize button -->
+  <button id="randomizeAllBtn">Randomize All</button>
+
+  <!-- Display randomization results -->
+  <div id="resultContainer"></div>
+
+  <script>
+    // Global state for the currently active template.
+    let categories = [];
+    let categoryIdCounter = 0;
+    const templatesKey = 'randomizerTemplates';
+
+    // Save the current template under a given name.
+    function saveCurrentTemplate(templateName) {
+      let templates = JSON.parse(localStorage.getItem(templatesKey)) || {};
+      templates[templateName] = {
+        categories: categories,
+        categoryIdCounter: categoryIdCounter
+      };
+      localStorage.setItem(templatesKey, JSON.stringify(templates));
+      updateTemplateSelect();
+      alert("Template '" + templateName + "' saved.");
+    }
+
+    // Load a template from localStorage.
+    function loadTemplate(templateName) {
+      let templates = JSON.parse(localStorage.getItem(templatesKey)) || {};
+      if (templates[templateName]) {
+        categories = templates[templateName].categories || [];
+        categoryIdCounter = templates[templateName].categoryIdCounter || 0;
+        renderCategories();
+      } else {
+        alert("Template not found.");
+      }
+    }
+
+    // Delete a template by name.
+    function deleteTemplate(templateName) {
+      let templates = JSON.parse(localStorage.getItem(templatesKey)) || {};
+      if (templates[templateName]) {
+        delete templates[templateName];
+        localStorage.setItem(templatesKey, JSON.stringify(templates));
+        updateTemplateSelect();
+        alert("Template '" + templateName + "' deleted.");
+      } else {
+        alert("Template not found.");
+      }
+    }
+
+    // Update the dropdown with saved templates.
+    function updateTemplateSelect() {
+      const templateSelect = document.getElementById('templateSelect');
+      templateSelect.innerHTML = '';
+      let templates = JSON.parse(localStorage.getItem(templatesKey)) || {};
+      for (let templateName in templates) {
+        let option = document.createElement('option');
+        option.value = templateName;
+        option.textContent = templateName;
+        templateSelect.appendChild(option);
+      }
+    }
+
+    // Render categories UI.
+    function renderCategories() {
+      const container = document.getElementById('categoriesContainer');
+      container.innerHTML = '';
+      categories.forEach(category => {
+        const catDiv = document.createElement('div');
+        catDiv.classList.add('category');
+        catDiv.setAttribute('data-id', category.id);
+
+        // Category header and delete button.
+        const header = document.createElement('div');
+        header.classList.add('category-header');
+        header.textContent = category.name;
+        catDiv.appendChild(header);
+
+        const deleteCategoryBtn = document.createElement('button');
+        deleteCategoryBtn.textContent = 'Delete Category';
+        deleteCategoryBtn.addEventListener('click', function() {
+          if (confirm("Are you sure you want to delete the category '" + category.name + "'?")) {
+            categories = categories.filter(cat => cat.id !== category.id);
+            renderCategories();
+          }
+        });
+        catDiv.appendChild(deleteCategoryBtn);
+
+        // Input for comma-separated items.
+        const itemsInput = document.createElement('input');
+        itemsInput.type = 'text';
+        itemsInput.placeholder = 'Enter items (comma separated)';
+        // Pre-fill with current items if available.
+        itemsInput.value = category.items.join(', ');
+        // Assign a unique id so we can update later.
+        itemsInput.id = "itemsInput-" + category.id;
+        // Update category on blur (when user leaves the field).
+        itemsInput.addEventListener('blur', function() {
+          const itemsText = itemsInput.value.trim();
+          category.items = itemsText === "" ? [] : itemsText.split(',').map(item => item.trim()).filter(item => item !== '');
+        });
+        catDiv.appendChild(itemsInput);
+
+        container.appendChild(catDiv);
+      });
+    }
+
+    // Event: Add a new category.
+    document.getElementById('addCategoryBtn').addEventListener('click', function() {
+      const categoryNameInput = document.getElementById('categoryNameInput');
+      const categoryName = categoryNameInput.value.trim();
+      if (categoryName !== '') {
+        const newCategory = { id: ++categoryIdCounter, name: categoryName, items: [] };
+        categories.push(newCategory);
+        renderCategories();
+        categoryNameInput.value = '';
+      }
+    });
+
+    // Event: Randomize items for all categories.
+    document.getElementById('randomizeAllBtn').addEventListener('click', function() {
+      // Before randomizing, update each category from its text input.
+      categories.forEach(category => {
+        let itemsInput = document.getElementById("itemsInput-" + category.id);
+        if (itemsInput) {
+          const itemsText = itemsInput.value.trim();
+          category.items = itemsText === "" ? [] : itemsText.split(',').map(item => item.trim()).filter(item => item !== '');
+        }
+      });
+
+      const resultContainer = document.getElementById('resultContainer');
+      resultContainer.innerHTML = '';
+      categories.forEach(category => {
+        const resultDiv = document.createElement('div');
+        resultDiv.classList.add('result');
+        let randomItem = 'No items in this category';
+        if (category.items.length > 0) {
+          const randIndex = Math.floor(Math.random() * category.items.length);
+          randomItem = category.items[randIndex];
+        }
+        resultDiv.textContent = category.name + ': ' + randomItem;
+        resultContainer.appendChild(resultDiv);
+      });
+    });
+
+    // Template management event listeners.
+    document.getElementById('saveTemplateBtn').addEventListener('click', function() {
+      const templateNameInput = document.getElementById('templateNameInput');
+      const templateName = templateNameInput.value.trim();
+      if (templateName !== '') {
+        saveCurrentTemplate(templateName);
+        templateNameInput.value = '';
+      } else {
+        alert("Please enter a template name.");
+      }
+    });
+
+    document.getElementById('loadTemplateBtn').addEventListener('click', function() {
+      const templateSelect = document.getElementById('templateSelect');
+      const templateName = templateSelect.value;
+      if (templateName) {
+        loadTemplate(templateName);
+      } else {
+        alert("No template selected.");
+      }
+    });
+
+    document.getElementById('deleteTemplateBtn').addEventListener('click', function() {
+      const templateSelect = document.getElementById('templateSelect');
+      const templateName = templateSelect.value;
+      if (templateName) {
+        if (confirm("Are you sure you want to delete template '" + templateName + "'?")) {
+          deleteTemplate(templateName);
+        }
+      } else {
+        alert("No template selected.");
+      }
+    });
+
+    // Initialize template dropdown on page load.
+    window.addEventListener('DOMContentLoaded', function() {
+      updateTemplateSelect();
+    });
+  </script>
+</body>
+</html>
