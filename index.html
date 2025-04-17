@@ -27,7 +27,6 @@
       color: var(--accent);
     }
 
-    /* two-column grid: 1fr 3fr on tablet+ */
     .main-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -55,7 +54,7 @@
       color: var(--accent);
     }
 
-    input[type="text"], select {
+    input[type="text"], select, input[type="number"] {
       width: 100%;
       padding: 10px;
       border: 1px solid var(--border);
@@ -74,14 +73,12 @@
     }
     button:hover {
       transform: translateY(-1px);
-      /* To darken accent, you can adjust opacity or use a slightly darker shade here */
       background: rgba(74,144,226,0.85);
     }
     button:active {
       transform: translateY(1px);
     }
 
-    /* Added spacing above load/delete group */
     .template-actions {
       margin-top: 1.5em;
       display: flex;
@@ -89,7 +86,6 @@
       align-items: center;
     }
 
-    /* Category list */
     #categoriesContainer {
       display: flex;
       flex-direction: column;
@@ -139,7 +135,7 @@
   <h1>Custom Randomizer</h1>
   <div class="main-grid">
 
-    <!-- Template Management (25% width on desktop) -->
+    <!-- Template Management -->
     <div id="templateManagement" class="card">
       <h2>Template Management</h2>
       <input type="text" id="templateNameInput" placeholder="Template name…" />
@@ -152,7 +148,7 @@
       </div>
     </div>
 
-    <!-- Categories / Randomizer (75% width on desktop) -->
+    <!-- Categories & Randomize -->
     <div id="categoriesSection" class="card">
       <h2>Categories &amp; Randomize</h2>
 
@@ -164,6 +160,15 @@
 
       <!-- Category List -->
       <div id="categoriesContainer"></div>
+
+      <!-- Auto‑randomize Controls -->
+      <div style="margin-bottom:10px; display:flex; align-items:center; gap:10px;">
+        <label>
+          <input type="checkbox" id="autoToggle" />
+          Auto‑randomize every
+        </label>
+        <input type="number" id="autoIntervalInput" min="1" value="5" style="width:4em;" /> seconds
+      </div>
 
       <!-- Randomize -->
       <button id="randomizeAllBtn" style="margin-top:10px;">Randomize All</button>
@@ -178,6 +183,7 @@
       const templatesKey = 'randomizerTemplates';
       let categories = [];
       let categoryIdCounter = 0;
+      let autoIntervalId = null;
 
       const els = {
         templateSelect:      document.getElementById('templateSelect'),
@@ -190,76 +196,77 @@
         randomizeAllBtn:     document.getElementById('randomizeAllBtn'),
         categoriesContainer: document.getElementById('categoriesContainer'),
         resultContainer:     document.getElementById('resultContainer'),
+        autoToggle:          document.getElementById('autoToggle'),
+        autoIntervalInput:   document.getElementById('autoIntervalInput'),
       };
 
-      function updateTemplateSelect(){
+      function updateTemplateSelect() {
         els.templateSelect.innerHTML = '';
-        const ts = JSON.parse(localStorage.getItem(templatesKey))||{};
-        Object.keys(ts).forEach(name=>{
+        const ts = JSON.parse(localStorage.getItem(templatesKey)) || {};
+        Object.keys(ts).forEach(name => {
           const opt = document.createElement('option');
-          opt.value = name; opt.textContent = name;
+          opt.value = name;
+          opt.textContent = name;
           els.templateSelect.appendChild(opt);
         });
       }
 
-      function saveCurrentTemplate(name){
-        const ts = JSON.parse(localStorage.getItem(templatesKey))||{};
-        ts[name] = {categories,categoryIdCounter};
-        localStorage.setItem(templatesKey,JSON.stringify(ts));
+      function saveCurrentTemplate(name) {
+        const ts = JSON.parse(localStorage.getItem(templatesKey)) || {};
+        ts[name] = { categories, categoryIdCounter };
+        localStorage.setItem(templatesKey, JSON.stringify(ts));
         updateTemplateSelect();
         alert(`Saved '${name}'`);
       }
 
-      function loadTemplate(name){
-        const ts = JSON.parse(localStorage.getItem(templatesKey))||{};
-        if(!ts[name]) return alert('Not found');
+      function loadTemplate(name) {
+        const ts = JSON.parse(localStorage.getItem(templatesKey)) || {};
+        if (!ts[name]) return alert('Not found');
         categories = ts[name].categories;
         categoryIdCounter = ts[name].categoryIdCounter;
         renderCategories();
       }
 
-      function deleteTemplate(name){
-        const ts = JSON.parse(localStorage.getItem(templatesKey))||{};
-        if(!ts[name]) return alert('Not found');
+      function deleteTemplate(name) {
+        const ts = JSON.parse(localStorage.getItem(templatesKey)) || {};
+        if (!ts[name]) return alert('Not found');
         delete ts[name];
-        localStorage.setItem(templatesKey,JSON.stringify(ts));
+        localStorage.setItem(templatesKey, JSON.stringify(ts));
         updateTemplateSelect();
         alert(`Deleted '${name}'`);
       }
 
-      function renderCategories(){
+      function renderCategories() {
         els.categoriesContainer.innerHTML = '';
-        categories.forEach(cat=>{
+        categories.forEach(cat => {
           const div = document.createElement('div');
           div.className = 'category';
 
-          // header + delete icon
           const hdr = document.createElement('div');
-          hdr.className='category-header';
-          hdr.textContent=cat.name;
+          hdr.className = 'category-header';
+          hdr.textContent = cat.name;
           div.appendChild(hdr);
 
           const del = document.createElement('button');
-          del.textContent='✕';
-          del.title='Delete';
-          del.addEventListener('click',()=> {
-            if(confirm(`Delete '${cat.name}'?`)) {
-              categories = categories.filter(c=>c.id!==cat.id);
+          del.textContent = '✕';
+          del.title = 'Delete';
+          del.addEventListener('click', () => {
+            if (confirm(`Delete '${cat.name}'?`)) {
+              categories = categories.filter(c => c.id !== cat.id);
               renderCategories();
             }
           });
           div.appendChild(del);
 
-          // items input
           const inp = document.createElement('input');
-          inp.type='text';
-          inp.id=`itemsInput-${cat.id}`;
-          inp.placeholder='Items, comma‑separated';
-          inp.value=cat.items.join(', ');
-          inp.addEventListener('input',()=>{
+          inp.type = 'text';
+          inp.id = `itemsInput-${cat.id}`;
+          inp.placeholder = 'Items, comma‑separated';
+          inp.value = cat.items.join(', ');
+          inp.addEventListener('input', () => {
             const t = inp.value.trim();
             cat.items = t
-              ? t.split(',').map(i=>i.trim()).filter(i=>i)
+              ? t.split(',').map(i => i.trim()).filter(i => i)
               : [];
           });
           div.appendChild(inp);
@@ -268,64 +275,90 @@
         });
       }
 
-      els.addCategoryBtn.addEventListener('click',()=>{
-        const n = els.categoryNameInput.value.trim();
-        if(!n) return alert('Name?');
-        categories.push({id:++categoryIdCounter,name:n,items:[]});
-        els.categoryNameInput.value='';
-        renderCategories();
-      });
-
-      els.randomizeAllBtn.addEventListener('click',()=>{
-        // final sync
-        categories.forEach(cat=>{
+      function syncCategories() {
+        categories.forEach(cat => {
           const i = document.getElementById(`itemsInput-${cat.id}`);
-          if(i){
+          if (i) {
             const t = i.value.trim();
             cat.items = t
-              ? t.split(',').map(x=>x.trim()).filter(x=>x)
+              ? t.split(',').map(x => x.trim()).filter(x => x)
               : [];
           }
         });
-        els.resultContainer.innerHTML='';
-        categories.forEach(cat=>{
+      }
+
+      els.addCategoryBtn.addEventListener('click', () => {
+        const n = els.categoryNameInput.value.trim();
+        if (!n) return alert('Name?');
+        categories.push({ id: ++categoryIdCounter, name: n, items: [] });
+        els.categoryNameInput.value = '';
+        renderCategories();
+      });
+
+      els.randomizeAllBtn.addEventListener('click', () => {
+        syncCategories();
+        els.resultContainer.innerHTML = '';
+        categories.forEach(cat => {
           const r = document.createElement('div');
-          r.className='result';
-          let pick='(no items)';
-          if(cat.items.length){
-            pick=cat.items[Math.floor(Math.random()*cat.items.length)];
+          r.className = 'result';
+          let pick = '(no items)';
+          if (cat.items.length) {
+            pick = cat.items[Math.floor(Math.random() * cat.items.length)];
           }
-          r.textContent=`${cat.name}: ${pick}`;
+          r.textContent = `${cat.name}: ${pick}`;
           els.resultContainer.appendChild(r);
         });
       });
 
-      els.saveTemplateBtn.addEventListener('click',()=>{
-        // final sync
-        categories.forEach(cat=>{
-          const i = document.getElementById(`itemsInput-${cat.id}`);
-          if(i){
-            const t = i.value.trim();
-            cat.items = t
-              ? t.split(',').map(x=>x.trim()).filter(x=>x)
-              : [];
-          }
-        });
+      els.saveTemplateBtn.addEventListener('click', () => {
+        syncCategories();
         const nm = els.templateNameInput.value.trim();
-        if(!nm) return alert('Name?');
+        if (!nm) return alert('Name?');
         saveCurrentTemplate(nm);
-        els.templateNameInput.value='';
+        els.templateNameInput.value = '';
       });
 
-      els.loadTemplateBtn.addEventListener('click',()=>{
-        const nm=els.templateSelect.value;
-        if(!nm) return alert('Select one');
+      els.loadTemplateBtn.addEventListener('click', () => {
+        const nm = els.templateSelect.value;
+        if (!nm) return alert('Select one');
         loadTemplate(nm);
       });
-      els.deleteTemplateBtn.addEventListener('click',()=>{
-        const nm=els.templateSelect.value;
-        if(!nm) return alert('Select one');
-        if(confirm(`Delete '${nm}'?`)) deleteTemplate(nm);
+
+      els.deleteTemplateBtn.addEventListener('click', () => {
+        const nm = els.templateSelect.value;
+        if (!nm) return alert('Select one');
+        if (confirm(`Delete '${nm}'?`)) deleteTemplate(nm);
+      });
+
+      // Auto‑randomize functions
+      function startAutoRandomize() {
+        const secs = parseFloat(els.autoIntervalInput.value);
+        if (isNaN(secs) || secs <= 0) {
+          return alert('Enter a positive number of seconds');
+        }
+        clearInterval(autoIntervalId);
+        autoIntervalId = setInterval(() => {
+          els.randomizeAllBtn.click();
+        }, secs * 1000);
+      }
+
+      function stopAutoRandomize() {
+        clearInterval(autoIntervalId);
+        autoIntervalId = null;
+      }
+
+      els.autoToggle.addEventListener('change', () => {
+        if (els.autoToggle.checked) {
+          startAutoRandomize();
+        } else {
+          stopAutoRandomize();
+        }
+      });
+
+      els.autoIntervalInput.addEventListener('input', () => {
+        if (els.autoToggle.checked) {
+          startAutoRandomize();
+        }
       });
 
       updateTemplateSelect();
