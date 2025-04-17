@@ -1,214 +1,335 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Custom Randomizer</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Custom Randomizer with Multiple Templates</title>
   <style>
     :root {
-      --primary-color: #4a90e2;
-      --secondary-color: #f5f7fa;
-      --accent-color: #50e3c2;
-      --text-color: #333;
-      --border-radius: 8px;
-      --transition-speed: 0.3s;
-      --spacing: 20px;
+      --primary-bg: #fafafa;
+      --card-bg: #fff;
+      --accent: #4a90e2;
+      --text: #333;
+      --border: #ddd;
+      --shadow: rgba(0, 0, 0, 0.05);
     }
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: var(--secondary-color);
-      color: var(--text-color);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: var(--spacing);
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: var(--primary-bg);
+      color: var(--text);
     }
     h1 {
-      margin-bottom: var(--spacing);
-      color: var(--primary-color);
-      font-size: 1.8rem;
+      margin-bottom: 20px;
       text-align: center;
+      color: var(--accent);
     }
-    .container {
-      width: 100%;
-      max-width: 800px;
+
+    /* two-column grid: 1fr 3fr on tablet+ */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
     }
+    @media (min-width: 768px) {
+      .main-grid {
+        grid-template-columns: 1fr 3fr;
+      }
+    }
+
     .card {
-      background: #fff;
-      border-radius: var(--border-radius);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      margin-bottom: var(--spacing);
-      padding: var(--spacing);
-      transition: transform var(--transition-speed), box-shadow var(--transition-speed);
-    }
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 2px 6px var(--shadow);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
     .card h2 {
-      margin-top: 0;
-      color: var(--primary-color);
-      font-size: 1.3rem;
+      margin: 0 0 10px;
+      font-size: 1.2em;
+      color: var(--accent);
     }
-    .form-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-    .form-group input[type="text"],
-    .form-group select {
-      flex: 1;
+
+    input[type="text"], select {
+      width: 100%;
       padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: var(--border-radius);
-      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 1em;
     }
-    .form-group button {
-      background-color: var(--primary-color);
+    button {
+      padding: 10px;
       border: none;
+      border-radius: 4px;
+      background: var(--accent);
       color: #fff;
-      padding: 10px 20px;
-      border-radius: var(--border-radius);
+      font-size: 1em;
       cursor: pointer;
-      transition: background-color var(--transition-speed);
-      white-space: nowrap;
+      transition: background 0.2s, transform 0.1s;
     }
-    .form-group button:hover {
-      background-color: #357ab8;
+    button:hover {
+      transform: translateY(-1px);
+      /* To darken accent, you can adjust opacity or use a slightly darker shade here */
+      background: rgba(74,144,226,0.85);
     }
+    button:active {
+      transform: translateY(1px);
+    }
+
+    /* Added spacing above load/delete group */
+    .template-actions {
+      margin-top: 1.5em;
+      display: flex;
+      gap: 0.5em;
+      align-items: center;
+    }
+
+    /* Category list */
     #categoriesContainer {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      display: flex;
+      flex-direction: column;
       gap: 15px;
     }
     .category {
+      border: 1px solid var(--border);
+      padding: 15px;
+      border-radius: 6px;
       display: flex;
-      flex-direction: column;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
     }
     .category-header {
-      font-size: 1.1em;
       font-weight: bold;
-      margin-bottom: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex: 1 1 auto;
     }
-    .category-header button {
+    .category button {
       background: transparent;
+      color: var(--accent);
       border: none;
-      color: var(--accent-color);
+      font-size: 1.2em;
+      line-height: 1;
       cursor: pointer;
-      font-size: 0.9em;
+      transition: color 0.2s;
     }
-    .category input[type="text"] {
-      flex: 1;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: var(--border-radius);
+    .category button:hover {
+      color: rgba(74,144,226,0.85);
     }
-    #randomizeAllBtn {
-      width: 100%;
-      padding: 12px;
-      background-color: var(--accent-color);
-      border: none;
-      color: #fff;
-      border-radius: var(--border-radius);
-      font-size: 1em;
-      cursor: pointer;
-      transition: background-color var(--transition-speed);
-      margin-top: var(--spacing);
-    }
-    #randomizeAllBtn:hover {
-      background-color: #3bbf9e;
-    }
-    #resultContainer .result {
-      background: #fff;
-      border-radius: var(--border-radius);
+    .result {
       padding: 15px;
-      margin-bottom: 10px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 1rem;
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      background: #f0f8ff;
     }
 
-    /* Mobile adjustments */
-    @media (max-width: 600px) {
-      body {
-        padding: 10px;
-      }
-      h1 {
-        font-size: 1.5rem;
-      }
-      .form-group {
-        flex-direction: column;
-        gap: 8px;
-      }
-      .form-group input[type="text"],
-      .form-group select,
-      .form-group button {
-        width: 100%;
-        margin-right: 0;
-      }
-      #categoriesContainer {
-        grid-template-columns: 1fr;
-      }
-      .card {
-        padding: 15px;
-      }
-      .card h2 {
-        font-size: 1.2rem;
-      }
-      #randomizeAllBtn {
-        padding: 14px;
-        font-size: 1.1rem;
-      }
-      #resultContainer .result {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 5px;
-      }
+    #resultContainer {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🎲 Custom Randomizer</h1>
+  <h1>Custom Randomizer</h1>
+  <div class="main-grid">
 
-    <div class="card">
-      <h2>📝 Template Management</h2>
-      <div class="form-group">
-        <input type="text" id="templateNameInput" placeholder="Template name" />
-        <button id="saveTemplateBtn">Save</button>
-      </div>
-      <div class="form-group">
+    <!-- Template Management (25% width on desktop) -->
+    <div id="templateManagement" class="card">
+      <h2>Template Management</h2>
+      <input type="text" id="templateNameInput" placeholder="Template name…" />
+      <button id="saveTemplateBtn">Save Template</button>
+
+      <div class="template-actions">
         <select id="templateSelect"></select>
         <button id="loadTemplateBtn">Load</button>
         <button id="deleteTemplateBtn">Delete</button>
       </div>
     </div>
 
-    <div class="card">
-      <h2>➕ Add Category</h2>
-      <div class="form-group">
-        <input type="text" id="categoryNameInput" placeholder="Category name" />
-        <button id="addCategoryBtn">Add</button>
+    <!-- Categories / Randomizer (75% width on desktop) -->
+    <div id="categoriesSection" class="card">
+      <h2>Categories &amp; Randomize</h2>
+
+      <!-- Add Category -->
+      <div style="display:flex; gap:10px; flex-wrap: wrap;">
+        <input type="text" id="categoryNameInput" placeholder="New category name…" />
+        <button id="addCategoryBtn">Add Category</button>
       </div>
+
+      <!-- Category List -->
+      <div id="categoriesContainer"></div>
+
+      <!-- Randomize -->
+      <button id="randomizeAllBtn" style="margin-top:10px;">Randomize All</button>
+
+      <!-- Results -->
+      <div id="resultContainer"></div>
     </div>
-
-    <div id="categoriesContainer"></div>
-
-    <button id="randomizeAllBtn">🔀 Randomize All</button>
-
-    <div id="resultContainer"></div>
   </div>
 
-  <!-- JavaScript logic unchanged, only elements and classes updated to match new UI -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const templatesKey = 'randomizerTemplates';
+      let categories = [];
+      let categoryIdCounter = 0;
+
+      const els = {
+        templateSelect:      document.getElementById('templateSelect'),
+        templateNameInput:   document.getElementById('templateNameInput'),
+        saveTemplateBtn:     document.getElementById('saveTemplateBtn'),
+        loadTemplateBtn:     document.getElementById('loadTemplateBtn'),
+        deleteTemplateBtn:   document.getElementById('deleteTemplateBtn'),
+        categoryNameInput:   document.getElementById('categoryNameInput'),
+        addCategoryBtn:      document.getElementById('addCategoryBtn'),
+        randomizeAllBtn:     document.getElementById('randomizeAllBtn'),
+        categoriesContainer: document.getElementById('categoriesContainer'),
+        resultContainer:     document.getElementById('resultContainer'),
+      };
+
+      function updateTemplateSelect(){
+        els.templateSelect.innerHTML = '';
+        const ts = JSON.parse(localStorage.getItem(templatesKey))||{};
+        Object.keys(ts).forEach(name=>{
+          const opt = document.createElement('option');
+          opt.value = name; opt.textContent = name;
+          els.templateSelect.appendChild(opt);
+        });
+      }
+
+      function saveCurrentTemplate(name){
+        const ts = JSON.parse(localStorage.getItem(templatesKey))||{};
+        ts[name] = {categories,categoryIdCounter};
+        localStorage.setItem(templatesKey,JSON.stringify(ts));
+        updateTemplateSelect();
+        alert(`Saved '${name}'`);
+      }
+
+      function loadTemplate(name){
+        const ts = JSON.parse(localStorage.getItem(templatesKey))||{};
+        if(!ts[name]) return alert('Not found');
+        categories = ts[name].categories;
+        categoryIdCounter = ts[name].categoryIdCounter;
+        renderCategories();
+      }
+
+      function deleteTemplate(name){
+        const ts = JSON.parse(localStorage.getItem(templatesKey))||{};
+        if(!ts[name]) return alert('Not found');
+        delete ts[name];
+        localStorage.setItem(templatesKey,JSON.stringify(ts));
+        updateTemplateSelect();
+        alert(`Deleted '${name}'`);
+      }
+
+      function renderCategories(){
+        els.categoriesContainer.innerHTML = '';
+        categories.forEach(cat=>{
+          const div = document.createElement('div');
+          div.className = 'category';
+
+          // header + delete icon
+          const hdr = document.createElement('div');
+          hdr.className='category-header';
+          hdr.textContent=cat.name;
+          div.appendChild(hdr);
+
+          const del = document.createElement('button');
+          del.textContent='✕';
+          del.title='Delete';
+          del.addEventListener('click',()=> {
+            if(confirm(`Delete '${cat.name}'?`)) {
+              categories = categories.filter(c=>c.id!==cat.id);
+              renderCategories();
+            }
+          });
+          div.appendChild(del);
+
+          // items input
+          const inp = document.createElement('input');
+          inp.type='text';
+          inp.id=`itemsInput-${cat.id}`;
+          inp.placeholder='Items, comma‑separated';
+          inp.value=cat.items.join(', ');
+          inp.addEventListener('input',()=>{
+            const t = inp.value.trim();
+            cat.items = t
+              ? t.split(',').map(i=>i.trim()).filter(i=>i)
+              : [];
+          });
+          div.appendChild(inp);
+
+          els.categoriesContainer.appendChild(div);
+        });
+      }
+
+      els.addCategoryBtn.addEventListener('click',()=>{
+        const n = els.categoryNameInput.value.trim();
+        if(!n) return alert('Name?');
+        categories.push({id:++categoryIdCounter,name:n,items:[]});
+        els.categoryNameInput.value='';
+        renderCategories();
+      });
+
+      els.randomizeAllBtn.addEventListener('click',()=>{
+        // final sync
+        categories.forEach(cat=>{
+          const i = document.getElementById(`itemsInput-${cat.id}`);
+          if(i){
+            const t = i.value.trim();
+            cat.items = t
+              ? t.split(',').map(x=>x.trim()).filter(x=>x)
+              : [];
+          }
+        });
+        els.resultContainer.innerHTML='';
+        categories.forEach(cat=>{
+          const r = document.createElement('div');
+          r.className='result';
+          let pick='(no items)';
+          if(cat.items.length){
+            pick=cat.items[Math.floor(Math.random()*cat.items.length)];
+          }
+          r.textContent=`${cat.name}: ${pick}`;
+          els.resultContainer.appendChild(r);
+        });
+      });
+
+      els.saveTemplateBtn.addEventListener('click',()=>{
+        // final sync
+        categories.forEach(cat=>{
+          const i = document.getElementById(`itemsInput-${cat.id}`);
+          if(i){
+            const t = i.value.trim();
+            cat.items = t
+              ? t.split(',').map(x=>x.trim()).filter(x=>x)
+              : [];
+          }
+        });
+        const nm = els.templateNameInput.value.trim();
+        if(!nm) return alert('Name?');
+        saveCurrentTemplate(nm);
+        els.templateNameInput.value='';
+      });
+
+      els.loadTemplateBtn.addEventListener('click',()=>{
+        const nm=els.templateSelect.value;
+        if(!nm) return alert('Select one');
+        loadTemplate(nm);
+      });
+      els.deleteTemplateBtn.addEventListener('click',()=>{
+        const nm=els.templateSelect.value;
+        if(!nm) return alert('Select one');
+        if(confirm(`Delete '${nm}'?`)) deleteTemplate(nm);
+      });
+
+      updateTemplateSelect();
+    });
+  </script>
 </body>
 </html>
